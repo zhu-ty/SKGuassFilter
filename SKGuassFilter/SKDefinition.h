@@ -7,4 +7,6 @@
 
 //#define RESIZE_PIC
 
-
+#define sqr(x) ((x)*(x))
+#define SK_PI 3.14159265358979323846
+#define PROGRESS_RATE 50

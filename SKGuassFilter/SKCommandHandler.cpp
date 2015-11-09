@@ -1,4 +1,4 @@
-//Author:ShadowK
+//Author:ShadowK-
 //email:zhu.shadowk@gmail.com
 //2015.11.9
 //Use Ctrl+M,Ctrl+O to fold the code.
@@ -29,6 +29,9 @@ public:
 	void display(string name);
 	void hide();
 	void exit();
+	double get_double(string mes);
+	int get_int(string mes);
+	bool in_rect(int xsize, int ysize, int x, int y);
 
 	void calculate();
 
@@ -215,7 +218,28 @@ void SKCommandHandlerImpl::exit()
 	hide();
 	printf("See you next time!\n");
 }
-
+double SKCommandHandlerImpl::get_double(string mes)
+{
+	printf(mes.c_str());
+	double x;
+	scanf("%lf", &x);
+	fflush(stdin);
+	return x;
+}
+int SKCommandHandlerImpl::get_int(string mes)
+{
+	printf(mes.c_str());
+	int x;
+	scanf("%d", &x);
+	fflush(stdin);
+	return x;
+}
+bool SKCommandHandlerImpl::in_rect(int xsize, int ysize, int x, int y)
+{
+	if (x < 0 || y < 0 || x >= xsize || y >= ysize)
+		return false;
+	return true;
+}
 void SKCommandHandlerImpl::calculate()
 {
 	//Check input and turn it into gray.
@@ -224,7 +248,41 @@ void SKCommandHandlerImpl::calculate()
 	Mat tmp;
 	cvtColor(input, tmp, CV_BGR2GRAY);
 	//output = tmp;
+	double sigma = get_double("Input your Sigma:\n");
+	int windowsize = (int)(1 + 2 * ceil(3 * sigma));//WINDOWSIZE,ODD
+	double sum = 0;
+	vector<vector<double>> kernal;
+	for (int i = 0; i < windowsize; i++)
+	{
+		vector<double> tmpk;
+		for (int j = 0; j < windowsize; j++)
+		{
+			int disx = i - windowsize / 2;
+			int disy = j - windowsize / 2;
+			double tmps = 2 * sqr(sigma);
+			tmpk.push_back(1 / (SK_PI*tmps) * exp(-1*((sqr(disx)+sqr(disy))/(tmps))));
+			sum += tmpk[j];
+		}
+		kernal.push_back(tmpk);
+	}
+	for (int i = 0; i < windowsize; i++)
+		for (int j = 0; j < windowsize; j++)
+			kernal[i][j] = kernal[i][j] / sum;
+	for (int i = 0; i < tmp.size().height; i++)
+	{
+		if (i % PROGRESS_RATE == 0)
+			printf(".");
+		for (int j = 0; j < tmp.size().width; j++)
+		{
+			double anspixel = 0;
+			for (int y = -1 * (windowsize / 2); y < windowsize / 2; y++)
+				for (int x = -1 * (windowsize / 2); x < windowsize / 2; x++)
+					if (in_rect(tmp.size().width, tmp.size().height, j + x, i + y))
+						anspixel += tmp.at<uchar>(i + y, j + x)*kernal[x + windowsize / 2][y + windowsize / 2];
+			tmp.at<uchar>(i, j) = anspixel;
 
-
+		}
+	}
+	output = tmp;
 	printf("\n");
 }
